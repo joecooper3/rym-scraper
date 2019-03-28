@@ -1,0 +1,17 @@
+{
+  "name": "rym-scraper",
+  "version": "1.0.0",
+  "description": "Just playing around with Cheerio",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node -r esm index.js"
+  },
+  "author": "Joe Cooper",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "cheerio": "^1.0.0-rc.2",
+    "esm": "^3.2.20",
+    "lowdb": "^1.0.0"
+  }
+}
