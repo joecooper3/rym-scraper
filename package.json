@@ -4,14 +4,20 @@
   "description": "Just playing around with Cheerio",
   "main": "index.js",
   "scripts": {
-    "dev": "node -r esm index.js"
+    "dev": "node -r esm index.js",
+    "mongo": "node -r esm mongodb-test.js",
+    "mysql": "node -r esm mysql-test.js"
   },
   "author": "Joe Cooper",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.18.0",
     "cheerio": "^1.0.0-rc.2",
+    "dotenv": "^7.0.0",
     "esm": "^3.2.20",
-    "lowdb": "^1.0.0"
+    "lowdb": "^1.0.0",
+    "mongodb": "^3.2.2",
+    "mongoose": "^5.4.21",
+    "mysql": "^2.16.0"
   }
 }
