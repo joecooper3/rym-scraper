@@ -3,11 +3,22 @@ import cheerio from 'cheerio';
 import FileSync from 'lowdb/adapters/FileSync';
 import low from 'lowdb';
 
+const jsonFile = require('./db.json');
+const data = jsonFile.entries;
+
+const idArr = data.reduce(
+    (acc, val) => {
+        console.log(acc.ratingId);
+        return val;
+    },
+    []
+);
+
 const adapter = new FileSync('db.json')
 const db = low(adapter)
 
-const rymLink = 'https://rateyourmusic.com/collection/JoeCooper/recent/4';
-// const rymLink = 'http://127.0.0.1:5501/sample.html';
+// const rymLink = 'https://rateyourmusic.com/collection/JoeCooper/recent/4';
+const rymLink = 'http://127.0.0.1:5501/sample.html';
 
 const grabTheHtml = async () => { 
     const { data: html } = await axios.get(rymLink);
@@ -17,8 +28,8 @@ const grabTheHtml = async () => {
     const totalPages = $(".navspan .navlinknum").last().text();
 
     $('.mbgen').find('tr:not(:first-child)').each((i, el) => {
-        masterArr[i] = {
-            id: i,
+
+        masterArr.push({
             ratingId: parseInt($(el).find('.or_q_rating_date_s').find('span').text().split("[Rating")[1].split("]")[0]),
             rymId: parseInt($(el).find('.album').attr('title').split("[Album")[1].split("]")[0]),
             artist: $(el).find('.artist').text(),
@@ -37,7 +48,7 @@ const grabTheHtml = async () => {
                 day: $(el).find('.date_element_day').text(),
                 year: $(el).find('.date_element_year').text()
             }
-        };
+        });
     });
     db.defaults({ entries: [] }).write();
     masterArr.forEach((inp) => { 
@@ -50,4 +61,6 @@ const grabTheHtml = async () => {
     console.log(`TOTAL PAGES: ${totalPages}`)
 }
 
-grabTheHtml();
+// console.log(data);
+console.log(idArr);
+// grabTheHtml();
