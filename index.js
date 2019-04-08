@@ -3,64 +3,71 @@ import cheerio from 'cheerio';
 import FileSync from 'lowdb/adapters/FileSync';
 import low from 'lowdb';
 
-const jsonFile = require('./db.json');
-const data = jsonFile.entries;
+import newEntry from './utils/new-entry';
 
-const idArr = data.reduce(
+const adapter = new FileSync('db.json');
+const db = low(adapter);
+
+const jsonFile = require('./db.json');
+const fileFilled = Object.keys(jsonFile).length;
+const data = fileFilled ? jsonFile.entries : null;
+
+const ratingsArr = data ? data.reduce(
     (acc, val) => {
-        console.log(acc.ratingId);
-        return val;
+        acc.push({id: val.ratingId, rating: val.rating});
+        return acc;
     },
     []
-);
+    ) : [];
+    const idArr = ratingsArr.map(item => item.id);
+    
+    const rymLink = 'https://rateyourmusic.com/collection/JoeCooper/recent/';
+    // const rymLink = 'http://127.0.0.1:5501/sample.html';
+    
+    const grabTheHtml = async () => {
+        const { data: html } = await axios.get(rymLink);
+        const $ = cheerio.load(html);
+        
+        const totalPages = $(".navspan .navlinknum").last().text();
+        const newEntryArr = [];
 
-const adapter = new FileSync('db.json')
-const db = low(adapter)
-
-// const rymLink = 'https://rateyourmusic.com/collection/JoeCooper/recent/4';
-const rymLink = 'http://127.0.0.1:5501/sample.html';
-
-const grabTheHtml = async () => { 
-    const { data: html } = await axios.get(rymLink);
-    const $ = cheerio.load(html);
-
-    const masterArr = [];
-    const totalPages = $(".navspan .navlinknum").last().text();
-
-    $('.mbgen').find('tr:not(:first-child)').each((i, el) => {
-
-        masterArr.push({
-            ratingId: parseInt($(el).find('.or_q_rating_date_s').find('span').text().split("[Rating")[1].split("]")[0]),
-            rymId: parseInt($(el).find('.album').attr('title').split("[Album")[1].split("]")[0]),
-            artist: $(el).find('.artist').text(),
-            album: $(el).find('.album').text(),
-            year: parseInt($(el).find('.smallgray').text().slice(1,5)),
-            genres: 
-                $(el).find('.smallgray').text().slice(6) ?
-                $(el).find('.smallgray').text().slice(6).split(", ") :
-                [],
-            rating: 
-                $(el).find('.or_q_rating_date_s').find('img').attr('alt') ? 
-                parseInt($(el).find('.or_q_rating_date_s').find('img').attr('src').split('img/images/')[1].split('m.png')[0]) : 
-                '',
-            dateAdded: {
-                month: $(el).find('.date_element_month').text(),
-                day: $(el).find('.date_element_day').text(),
-                year: $(el).find('.date_element_year').text()
+        for (i = 0; i <= 5; i++) {
+            
+        }
+        
+        $('.mbgen').find('tr:not(:first-child)').each((i, el) => {
+            const currentId = parseInt($(el).find('.or_q_rating_date_s').find('span').text().split("[Rating")[1].split("]")[0]);
+            const currentRating = $(el).find('.or_q_rating_date_s').find('img').attr('alt') ? 
+            parseInt($(el).find('.or_q_rating_date_s').find('img').attr('src').split('img/images/')[1].split('m.png')[0]) : 
+            '';
+            if (idArr.includes(currentId)) {
+                const currentEntry = data.filter(item => item.ratingId === currentId)[0];
+                const { artist, album, ratingId } = currentEntry;
+                const rating = currentEntry.rating ? currentEntry.rating : 'no rating';
+                if (currentEntry.rating !== currentRating) {
+                    console.log(`Changing ${artist} - ${album} from ${rating} to ${currentRating}`);
+                    db.get('entries')
+                    .find({ratingId: ratingId})
+                    .assign({rating: currentRating})
+                    .write();
+                }
+                
+            } else {
+                newEntry(newEntryArr, el, html);
             }
         });
+        db.defaults({ entries: [] }).write();
+        newEntryArr.forEach((inp) => { 
+            db.get('entries')
+            .push(inp)
+            .write()
     });
-    db.defaults({ entries: [] }).write();
-    masterArr.forEach((inp) => { 
-        db.get('entries')
-        .push(inp)
-        .write()
-    });
-    console.log(masterArr);
+    console.log(`Added ${newEntryArr.length} entries.`);
     console.log(`Total DB entries: ${db.get('entries').size().value()}`);
     console.log(`TOTAL PAGES: ${totalPages}`)
 }
 
 // console.log(data);
-console.log(idArr);
-// grabTheHtml();
+// console.log(idArr);
+// console.log(ratingsArr);
+grabTheHtml();
