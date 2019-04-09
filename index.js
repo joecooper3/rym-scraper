@@ -25,46 +25,64 @@ const ratingsArr = data ? data.reduce(
     // const rymLink = 'http://127.0.0.1:5501/sample.html';
     
     const grabTheHtml = async () => {
-        const { data: html } = await axios.get(rymLink);
-        const $ = cheerio.load(html);
+        const { data: htmlFirst } = await axios.get(rymLink);
+        const $first = cheerio.load(htmlFirst);
         
-        const totalPages = $(".navspan .navlinknum").last().text();
+        const totalPages = $first(".navspan .navlinknum").last().text();
         const newEntryArr = [];
-
-        for (i = 0; i <= 5; i++) {
-            
-        }
         
-        $('.mbgen').find('tr:not(:first-child)').each((i, el) => {
-            const currentId = parseInt($(el).find('.or_q_rating_date_s').find('span').text().split("[Rating")[1].split("]")[0]);
-            const currentRating = $(el).find('.or_q_rating_date_s').find('img').attr('alt') ? 
-            parseInt($(el).find('.or_q_rating_date_s').find('img').attr('src').split('img/images/')[1].split('m.png')[0]) : 
-            '';
-            if (idArr.includes(currentId)) {
-                const currentEntry = data.filter(item => item.ratingId === currentId)[0];
-                const { artist, album, ratingId } = currentEntry;
-                const rating = currentEntry.rating ? currentEntry.rating : 'no rating';
-                if (currentEntry.rating !== currentRating) {
-                    console.log(`Changing ${artist} - ${album} from ${rating} to ${currentRating}`);
-                    db.get('entries')
-                    .find({ratingId: ratingId})
-                    .assign({rating: currentRating})
-                    .write();
-                }
-                
+        const entryQuery = async (i, n) => {
+            let html;
+            if (i === 1) {
+                const rawHtml = await axios.get(rymLink);
+                html = rawHtml.data;
+                console.log('hit the first one');
             } else {
-                newEntry(newEntryArr, el, html);
+                const rawHtml = await axios.get(`${rymLink}${i}`);
+                html = rawHtml.data;
+                console.log(`hitting ${rymLink}${i}`);
             }
-        });
-        db.defaults({ entries: [] }).write();
-        newEntryArr.forEach((inp) => { 
-            db.get('entries')
-            .push(inp)
-            .write()
-    });
-    console.log(`Added ${newEntryArr.length} entries.`);
-    console.log(`Total DB entries: ${db.get('entries').size().value()}`);
-    console.log(`TOTAL PAGES: ${totalPages}`)
+            const $ = cheerio.load(html);
+            console.log('cheerio');
+            $('.mbgen').find('tr:not(:first-child)').each((i, el) => {
+                const currentId = parseInt($(el).find('.or_q_rating_date_s').find('span').text().split("[Rating")[1].split("]")[0]);
+                const currentRating = $(el).find('.or_q_rating_date_s').find('img').attr('alt') ? 
+                parseInt($(el).find('.or_q_rating_date_s').find('img').attr('src').split('img/images/')[1].split('m.png')[0]) : 
+                '';
+                if (idArr.includes(currentId)) {
+                    console.log('currentID is included');
+                    const currentEntry = data.filter(item => item.ratingId === currentId)[0];
+                    const { artist, album, ratingId } = currentEntry;
+                    const rating = currentEntry.rating ? currentEntry.rating : 'no rating';
+                    if (currentEntry.rating !== currentRating) {
+                        console.log(`Changing ${artist} - ${album} from ${rating} to ${currentRating}`);
+                        db.get('entries')
+                        .find({ratingId: ratingId})
+                        .assign({rating: currentRating})
+                        .write();
+                    }
+                    
+                } else {
+                    newEntry(newEntryArr, el, html);
+                }
+            });
+            if (i < n) {
+                setTimeout(() => entryQuery(i+1, n), 7000);
+            } else {
+                console.log('then end');
+                db.defaults({ entries: [] }).write();
+                newEntryArr.forEach((inp) => { 
+                    db.get('entries')
+                    .push(inp)
+                    .write()
+                });
+                console.log(`Added ${newEntryArr.length} entries.`);
+                console.log(`Total DB entries: ${db.get('entries').size().value()}`);
+                console.log(`TOTAL PAGES: ${totalPages}`)
+            }
+        }
+        entryQuery(1, 4);
+        
 }
 
 // console.log(data);
