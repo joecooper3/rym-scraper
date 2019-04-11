@@ -3,6 +3,7 @@ import cheerio from 'cheerio';
 import FileSync from 'lowdb/adapters/FileSync';
 import low from 'lowdb';
 
+import newArtist from './utils/new-artist';
 import newEntry from './utils/new-entry';
 
 const adapter = new FileSync('db.json');
@@ -21,8 +22,8 @@ const ratingsArr = data ? data.reduce(
     ) : [];
     const idArr = ratingsArr.map(item => item.id);
     
-    const rymLink = 'https://rateyourmusic.com/collection/JoeCooper/recent/';
-    // const rymLink = 'http://127.0.0.1:5501/sample.html';
+    // const rymLink = 'https://rateyourmusic.com/collection/JoeCooper/recent/';
+    const rymLink = 'http://127.0.0.1:5501/sample.html';
     
     const grabTheHtml = async () => {
         const { data: htmlFirst } = await axios.get(rymLink);
@@ -38,7 +39,7 @@ const ratingsArr = data ? data.reduce(
                 html = rawHtml.data;
                 console.log('hit the first one');
             } else {
-                const rawHtml = await axios.get(`${rymLink}${i}`);
+                const rawHtml = await axios.get(`${rymLink}`);
                 html = rawHtml.data;
                 console.log(`hitting ${rymLink}${i}`);
             }
@@ -50,7 +51,6 @@ const ratingsArr = data ? data.reduce(
                 parseInt($(el).find('.or_q_rating_date_s').find('img').attr('src').split('img/images/')[1].split('m.png')[0]) : 
                 '';
                 if (idArr.includes(currentId)) {
-                    console.log('currentID is included');
                     const currentEntry = data.filter(item => item.ratingId === currentId)[0];
                     const { artist, album, ratingId } = currentEntry;
                     const rating = currentEntry.rating ? currentEntry.rating : 'no rating';
@@ -69,7 +69,6 @@ const ratingsArr = data ? data.reduce(
             if (i < n) {
                 setTimeout(() => entryQuery(i+1, n), 7000);
             } else {
-                console.log('then end');
                 db.defaults({ entries: [] }).write();
                 newEntryArr.forEach((inp) => { 
                     db.get('entries')
@@ -78,10 +77,9 @@ const ratingsArr = data ? data.reduce(
                 });
                 console.log(`Added ${newEntryArr.length} entries.`);
                 console.log(`Total DB entries: ${db.get('entries').size().value()}`);
-                console.log(`TOTAL PAGES: ${totalPages}`)
             }
         }
-        entryQuery(1, 4);
+        entryQuery(1, 2);
         
 }
 
